@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PlayerController : MonoBehaviour
 {
@@ -19,6 +20,7 @@ public class PlayerController : MonoBehaviour
     private Rigidbody2D _rb;
     private float _currentTilt;
     private Camera _mainCamera;
+    private bool _isGameOver = false;
 
     private void Start()
     {
@@ -31,14 +33,23 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
+        if (_isGameOver)
+        {
+            HandleGameOverInput();
+            return;
+        }
+
         _horizontalInput = Input.GetAxisRaw("Horizontal"); // A/D или стрелки
         _verticalInput = Input.GetAxisRaw("Vertical");     // W/S или стрелки
     }
 
     private void FixedUpdate()
     {
-        HandleMovement();
-        HandleTilt();
+        if (!_isGameOver)
+        {
+            HandleMovement();
+            HandleTilt();
+        }
     }
 
     private void HandleMovement()
@@ -56,7 +67,6 @@ public class PlayerController : MonoBehaviour
         // Перемещаем
         _rb.MovePosition(newPosition);
     }
-
 
     private void HandleTilt()
     {
@@ -89,4 +99,29 @@ public class PlayerController : MonoBehaviour
         return new Vector2(clampedX, clampedY);
     }
 
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.gameObject.CompareTag("Enemy"))
+        {
+            Debug.Log("СТОЛКНОВЕНИЕ С ВРАГОМ!");
+            // Останавливаем игру
+            Time.timeScale = 0f;
+            _isGameOver = true;
+        }
+    }
+
+    private void HandleGameOverInput()
+    {
+        if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.D) ||
+            Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.RightArrow) ||
+            Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.Space))
+        {
+            // Возвращаем игру в нормальный режим
+            _isGameOver = false;
+            Time.timeScale = 1f;
+
+            // Перезагружаем сцену
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        }
+    }
 }
